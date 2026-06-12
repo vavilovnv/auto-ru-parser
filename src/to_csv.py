@@ -9,11 +9,12 @@ from datetime import datetime
 from settings import app_settings
 from src import strings
 from src.enums import Platform
+from src.schemas import Car
 
 DATA_FORMAT = "%Y-%m-%d_%H-%M-%S"
 
 
-def save_to_file(data) -> None:
+def save_to_file(data: list[Car]) -> None:
     """Save data to file."""
     file_path = _get_file_name()
 
@@ -52,7 +53,7 @@ def _open_csv_file(file_path: str) -> None:
     """Open csv file."""
     match platform.system():
         case Platform.WINDOWS:
-            os.startfile(file_path)
+            os.startfile(file_path)  # type: ignore[attr-defined]
         case Platform.DARWIN:
             subprocess.run(["open", file_path])
         case Platform.LINUX:

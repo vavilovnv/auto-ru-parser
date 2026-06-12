@@ -3,7 +3,7 @@
 import random
 import time
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from requests import Response, get
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -24,7 +24,7 @@ def get_pages_amount(content: bytes) -> int:
     soup = BeautifulSoup(content, "html.parser")
     target_data = soup.find(strings.SPAN_TAG, class_=strings.TARGET_CLASS)
 
-    if not target_data:
+    if not isinstance(target_data, Tag):
         return 0
 
     return len(target_data.contents)
@@ -38,15 +38,20 @@ def parse_content(*, content: bytes) -> list[Car]:
     items = soup.find_all(strings.DIV_TAG, class_="ListingItem__description")
 
     for item in items:
+        if not isinstance(item, Tag):
+            continue
+
         car_data = ""
-        if car_content := item.find(strings.DIV_TAG, strings.ITEM_SUMMARY):
+        if car_content := item.find(strings.DIV_TAG, class_=strings.ITEM_SUMMARY):
             car_data = car_content.get_text()
 
-        a_tag = item.find(strings.A_TAG, strings.ITEM_TITLE_LINK)
-        url = a_tag.get(strings.HREF_TAG, "") if a_tag else ""
+        a_tag = item.find(strings.A_TAG, class_=strings.ITEM_TITLE_LINK)
+        url = str(a_tag.get(strings.HREF_TAG, "")) if isinstance(a_tag, Tag) else ""
 
         car_price = 0
-        if price_content := item.find(strings.DIV_TAG, strings.ITEM_PRICE_CONTENT):
+        if price_content := item.find(
+            strings.DIV_TAG, class_=strings.ITEM_PRICE_CONTENT
+        ):
             raw_price = price_content.get_text()
             price_data = raw_price.replace(strings.NBSP_CODE, "").split(strings.RUR)
             if len(price_data):
@@ -56,7 +61,7 @@ def parse_content(*, content: bytes) -> list[Car]:
                     car_price = 0
 
         prod_year = 0
-        if year_data := item.find(strings.DIV_TAG, strings.ITEM_YEAR):
+        if year_data := item.find(strings.DIV_TAG, class_=strings.ITEM_YEAR):
             try:
                 prod_year = int(year_data.get_text())
             except ValueError:
@@ -115,7 +120,12 @@ def get_html_with_selenium(url: str, params: dict | None = None) -> str | None:
                 if "=" in cookie_str:
                     name, value = cookie_str.strip().split("=", 1)
                     cookies.append(
-                        {"name": name.strip(), "value": value, "domain": ".auto.ru", "path": "/"}
+                        {
+                            "name": name.strip(),
+                            "value": value,
+                            "domain": ".auto.ru",
+                            "path": "/",
+                        }
                     )
             driver.execute_cdp_cmd("Network.setCookies", {"cookies": cookies})
 

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: ruff format
+        run: uv run ruff format --check
+
+      - name: ruff check
+        run: uv run ruff check
+
+      - name: isort
+        run: uv run isort --profile black --check src
+
+      - name: mypy
+        run: uv run mypy src
+
+      - name: flake8
+        run: uv run flake8 src

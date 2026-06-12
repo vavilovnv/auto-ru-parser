@@ -34,3 +34,6 @@ jobs:
 
       - name: flake8
         run: uv run flake8 src
+
+      - name: pytest
+        run: uv run pytest tests/

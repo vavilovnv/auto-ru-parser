@@ -2,5 +2,5 @@
 
 isort --profile black src
 
-mypy src
-flake8 src
+mypy src tests
+flake8 src tests

@@ -8,3 +8,5 @@ csv_files
 /.venv
 /csv_files
 .env
+.python-version
+/.idea

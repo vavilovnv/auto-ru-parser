@@ -2,11 +2,13 @@
 
 import csv
 import os
+import platform
 import subprocess
 from datetime import datetime
 
 from settings import app_settings
 from src import strings
+from src.enums import Platform
 
 DATA_FORMAT = "%Y-%m-%d_%H-%M-%S"
 
@@ -48,7 +50,10 @@ def _get_file_name() -> str:
 
 def _open_csv_file(file_path: str) -> None:
     """Open csv file."""
-    if os.name == strings.WINDOWS:
-        os.startfile(file_path)
-    elif os.name == strings.LINUX_MAC:
-        subprocess.run(["xdg-open", file_path])
+    match platform.system():
+        case Platform.WINDOWS:
+            os.startfile(file_path)
+        case Platform.DARWIN:
+            subprocess.run(["open", file_path])
+        case Platform.LINUX:
+            subprocess.run(["xdg-open", file_path])

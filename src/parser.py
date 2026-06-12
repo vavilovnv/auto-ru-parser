@@ -42,9 +42,8 @@ def parse_content(*, content: bytes) -> list[Car]:
         if car_content := item.find(strings.DIV_TAG, strings.ITEM_SUMMARY):
             car_data = car_content.get_text()
 
-        url = item.find(strings.A_TAG, strings.ITEM_TITLE_LINK).get(
-            strings.HREF_TAG, ""
-        )
+        a_tag = item.find(strings.A_TAG, strings.ITEM_TITLE_LINK)
+        url = a_tag.get(strings.HREF_TAG, "") if a_tag else ""
 
         car_price = 0
         if price_content := item.find(strings.DIV_TAG, strings.ITEM_PRICE_CONTENT):
@@ -109,15 +108,18 @@ def get_html_with_selenium(url: str, params: dict | None = None) -> str | None:
             full_url += "?" if "?" not in full_url else "&"
             full_url += "&".join([f"{k}={v}" for k, v in params.items()])
 
-        driver.get(full_url)
-
         if app_settings.COOKIE:
+            driver.execute_cdp_cmd("Network.enable", {})
+            cookies = []
             for cookie_str in app_settings.COOKIE.split(";"):
                 if "=" in cookie_str:
                     name, value = cookie_str.strip().split("=", 1)
-                    driver.add_cookie(
-                        {"name": name, "value": value, "domain": ".auto.ru"}
+                    cookies.append(
+                        {"name": name.strip(), "value": value, "domain": ".auto.ru", "path": "/"}
                     )
+            driver.execute_cdp_cmd("Network.setCookies", {"cookies": cookies})
+
+        driver.get(full_url)
 
         time.sleep(TIME_TO_ENTER_CAPCHA)
 
@@ -141,6 +143,9 @@ def get_html_with_selenium(url: str, params: dict | None = None) -> str | None:
 def parse_response(url: str) -> list[Car] | None:
     """Parse the request."""
     url = url or app_settings.URL
+    if not url:
+        print("URL не указан. Укажите URL или задайте переменную URL в .env")
+        return None
 
     if app_settings.USE_SELENIUM:
         cars = parse_response_with_selenium(url)
@@ -171,7 +176,9 @@ def simple_parse_response(url: str) -> list[Car] | None:
 
     cars: list[Car] = []
     pages_amount = get_pages_amount(html.content)
-    for page in range(1, pages_amount + 1):
+    cars.extend(parse_content(content=html.content))
+
+    for page in range(2, pages_amount + 1):
         print(f"Парсим {page} страницу из {pages_amount}...")
 
         html = get_html(url, app_settings.HEADERS, params={"page": page})
@@ -199,9 +206,8 @@ def parse_response_with_selenium(url: str) -> list[Car] | None:
     if pages_amount == 0:
         print(
             "Не удалось определить количество страниц. \n"
-            "Возможно, структура сайта изменилась."
+            "Возможно, результат одностраничный или структура сайта изменилась."
         )
-        return None
 
     cars.extend(parse_content(content=html_bytes))
 

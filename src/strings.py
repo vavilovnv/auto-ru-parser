@@ -22,10 +22,6 @@ ITEM_SUMMARY = "ListingItem__summary"
 ITEM_TITLE_LINK = "Link ListingItemTitle__link"
 ITEM_YEAR = "ListingItem__yearBlock"
 
-# OS name
-WINDOWS = "nt"
-LINUX_MAC = "posix"
-
 # other
 NBSP_CODE = " "
 RUR = "₽"
